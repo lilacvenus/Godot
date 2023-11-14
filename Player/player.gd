@@ -1,20 +1,54 @@
 extends CharacterBody2D
 
-# Where the player is on the map
-var currentPosition = [0, 0]
-var pixelsToMove = 17
+@export var walk_speed = 6
+@onready var animations = $AnimationPlayer
+const TILE_SIZE = 16
 
-func _input(event):
-	if event.is_action_pressed("ui_right"):
-		currentPosition[0] += pixelsToMove
+var initial_position = Vector2(0, 0)
+var input_direction = Vector2(0, 1)
+var is_moving = false
+var percent_moved_to_next_tile = 0.0
+var direction = ""
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	initial_position = position
+
+func _physics_process(delta):
+	if is_moving == false:
+		process_player_movement_input()
+	elif input_direction != Vector2.ZERO:
+		move(delta)
+	else:
+		is_moving = false
+
+func process_player_movement_input():
+	if input_direction.y == 0:
+		input_direction.x = int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))
+	if input_direction.x == 0:
+		input_direction.y = int(Input.is_action_pressed("ui_down")) - int(Input.is_action_pressed("ui_up"))
+	if input_direction != Vector2.ZERO:
+		initial_position = position
+		is_moving = true
+		
+	if input_direction.x == 1:
+		direction = "Right"
+	elif input_direction.x == -1:
+		direction = "Left"
+	if input_direction.y == 1:
+		direction = "Down"
+	elif input_direction.y == -1:
+		direction = "Up"
+		
+	print(direction)
+
+func move(delta):
+	percent_moved_to_next_tile += walk_speed * delta
 	
-	elif event.is_action_pressed("ui_left"):
-		currentPosition[0] -= pixelsToMove
-	
-	elif event.is_action_pressed("ui_up"):
-		currentPosition[1] -= pixelsToMove
-	
-	elif event.is_action_pressed("ui_down"):
-		currentPosition[1] += pixelsToMove
-	
-	self.position = Vector2(currentPosition[0], currentPosition[1])
+	if percent_moved_to_next_tile >= 1.0:
+		position = initial_position + (input_direction * TILE_SIZE)
+		percent_moved_to_next_tile = 0.0
+		is_moving = false
+
+	else:
+		position = initial_position + (input_direction * TILE_SIZE * percent_moved_to_next_tile)
